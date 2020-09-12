@@ -5,6 +5,10 @@ library(purrr)
 library(tibble)
 library(shiny)
 
+
+# Create dataset ----------------------------------------------------------
+
+
 sim <- function(prev, n) {
     case <- rnorm(n*prev, mean = 40, sd = 7)
     non_case <- rexp(n*(1 - prev), 0.1)
@@ -44,6 +48,10 @@ param <- crossing(threshold = seq(20, 35, 1),
 
 property <- map2_dfr(param$threshold, param$prevalence, create_2by2,
                      lab_values = lab_results, n = n)
+
+
+# Shiny app ---------------------------------------------------------------
+
 
 ui <- fluidPage(
     titlePanel("Diagnostic Test Properties"),
