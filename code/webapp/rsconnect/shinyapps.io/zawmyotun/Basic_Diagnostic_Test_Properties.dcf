@@ -5,8 +5,8 @@ account: zawmyotun
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2782484
-bundleId: 3617124
+bundleId: 3620629
 url: https://zawmyotun.shinyapps.io/Basic_Diagnostic_Test_Properties/
-when: 1599782389.2498
+when: 1599869708.28731
 asMultiple: FALSE
 asStatic: FALSE
