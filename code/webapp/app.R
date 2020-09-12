@@ -128,8 +128,8 @@ server <- function(input, output, session) {
             filter(prev == input$prevalence) %>%
             pivot_longer(c(Sensitivity, Specificity)) %>%
             ggplot(aes(x = threshold, y = value, colour = name)) +
-            geom_vline(xintercept = input$threshold, size = 1.2, colour = "#173B71") +
             geom_line(size = 1) +
+            geom_vline(xintercept = input$threshold, size = 1.2, colour = "#173B71") +
             scale_y_continuous(breaks = seq(0, 1, 0.05),
                                labels = scales::percent_format(accuracy = 1)) +
             labs(x = "Threshold for a positive result", y = NULL, colour = NULL,
