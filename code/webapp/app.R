@@ -5,13 +5,15 @@ library(purrr)
 library(tibble)
 library(shiny)
 
+options(shiny.autoreload = TRUE)
+
 
 # Create dataset ----------------------------------------------------------
 
 
 sim <- function(prev, n) {
-    case <- rnorm(n*prev, mean = 40, sd = 7)
-    non_case <- rexp(n*(1 - prev), 0.1)
+    case <- rnorm(n*prev, mean = 30, sd = 7)
+    non_case <- rexp(n*(1 - prev), 0.16)
     tibble(prevalence = prev, case = list(case), non_case = list(non_case))
 }
 
@@ -39,15 +41,17 @@ create_2by2 <- function(threshold, dis_prev, lab_values, n) {
 }
 
 n <- 10000
+p <- c(0, 2, 5, 8, seq(10, 100, 10))
+plot_colours <- c("#B2182B", "#6CA6CD")
 
-lab_results <- (seq(10, 90, 10)/100) %>%
-    map_dfr(sim, n = n)
+lab_results <- map_dfr(p/100, sim, n = n)
 
-param <- crossing(threshold = seq(20, 35, 1),
-                  prevalence = seq(10, 90, 10)/100)
+param <- crossing(threshold = seq(0, 50, 1),
+                  prevalence = p/100)
 
 property <- map2_dfr(param$threshold, param$prevalence, create_2by2,
                      lab_values = lab_results, n = n)
+
 
 
 # Shiny app ---------------------------------------------------------------
@@ -56,22 +60,28 @@ property <- map2_dfr(param$threshold, param$prevalence, create_2by2,
 ui <- fluidPage(
     titlePanel("Diagnostic Test Properties"),
 
-    fluidRow(
-        column(3, htmlOutput("desc", inline = TRUE)),
-        column(3,
-               sliderInput("prevalence", "Disease prevalence",
-                           value = 0.1, step = 0.1, min = 0.1,
-                           max = 0.9),
-               sliderInput("threshold", "Threshold for a positive result",
-                           value = 20, step = 1, min = 20,
-                           max = 35, animate = TRUE),
-               tableOutput("twobytwo")
+    sidebarLayout(
+        sidebarPanel(
+            htmlOutput("desc", inline = TRUE),
+            sliderInput("prevalence", "Disease prevalence",
+                        value = 0.05, step = 0.1, min = 0,
+                        max = 0.9),
+            sliderInput("threshold", "Threshold for a positive result",
+                        value = 10, step = 1, animate = TRUE,
+                        min = 10, max = 30),
+            tableOutput("twobytwo"),
+            htmlOutput("author", inline = TRUE)
         ),
-        column(6, plotOutput("ss"))
-    ),
-    fluidRow(
-        column(6, plotOutput("thresholdplot")),
-        column(6, plotOutput("pv"))
+        mainPanel(
+            fluidRow(
+                column(6, plotOutput("thresholdplot")),
+                column(6, plotOutput("ss"))
+            ),
+            fluidRow(
+                column(6, plotOutput("pv")),
+                column(6, plotOutput("roc"))
+            )
+        )
     )
 )
 
@@ -105,35 +115,24 @@ server <- function(input, output, session) {
 	    <li>Alternatively, you can press the play button below the slider to raise the threshold step-by-step automatically.</li>
 	</ul>")
 
-    # Predictive values plot
-    output$pv <- renderPlot({
-        property %>%
-            filter(threshold == input$threshold) %>%
-            ggplot(aes(x = prev, y = ppv)) +
-            geom_line(size = 1, col = "#173B71") +
-            scale_x_continuous(limits = c(0.1, 0.9), breaks = seq(0, 1, 0.1),
-                               labels = scales::percent_format(accuracy = 1)) +
-            scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.25),
-                               labels = scales::percent_format(accuracy = 1)) +
-            labs(x = "Disease prevalence", y = " ", colour = NULL,
-                 title = "Positive predictive value") +
-            theme_light() +
-            theme(panel.grid.minor = element_blank(),
-                  axis.title.y = element_text(size = 0.1))
-    }, res = 96)
+    output$author <- renderText(
+        "<p style='font-size: 11px'>Created by <a href='https://github.com/zawmtun'>Zaw Myo Tun</a>. Code for this webapp is available <a href='https://github.com/zawmtun/diagnosticTestEpi/blob/master/code/webapp/app.R'>here</a></p>."
+        )
 
     # Sensitivity and specificity plot
     output$ss <- renderPlot({
-        property %>%
+        ss_dat <- property %>%
             filter(prev == input$prevalence) %>%
-            pivot_longer(c(Sensitivity, Specificity)) %>%
-            ggplot(aes(x = threshold, y = value, colour = name)) +
-            geom_line(size = 1) +
-            geom_vline(xintercept = input$threshold, size = 1.2, colour = "#173B71") +
-            scale_y_continuous(breaks = seq(0, 1, 0.05),
-                               labels = scales::percent_format(accuracy = 1)) +
-            labs(x = "Threshold for a positive result", y = NULL, colour = NULL,
-                 title = "Sensitivity and specificity") +
+            filter(threshold %in% 10:30) %>%
+            pivot_longer(c(Sensitivity, Specificity))
+
+        ggplot(ss_dat, aes(x = threshold, y = value, colour = name)) +
+            geom_line(size = 1.4) +
+            geom_vline(xintercept = input$threshold, size = 1.2, colour = "grey35") +
+            scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+            scale_color_manual(values = plot_colours) +
+            labs(x = "Threshold for a positive result", y = "", colour = NULL,
+                 title = "Sensitivity and Specificity") +
             theme_light() +
             theme(axis.title.y = element_text(size = 0.6),
                   legend.position = "top",
@@ -152,13 +151,58 @@ server <- function(input, output, session) {
                    status = rep(c("Present", "Absent"), times = c(length(case), length(non_case)))) %>%
             ggplot(aes(x = value, fill = status, colour = status)) +
             geom_density(alpha = 0.4) +
-            geom_vline(xintercept = input$threshold, size = 1.2, colour = "#173B71") +
+            geom_vline(xintercept = input$threshold, size = 1.2, colour = "grey35") +
             labs(x = "Laboratory test values", y = NULL, colour = "Disease", fill = "Disease",
-                 title = "Density of laboratory test values") +
+                 title = "Density of Laboratory Test Values") +
             scale_x_continuous(breaks = seq(0, 150, 10)) +
+            scale_color_manual(values = plot_colours) +
+            scale_fill_manual(values = plot_colours) +
             theme_light() +
             theme(panel.grid.minor = element_blank(),
                   legend.position = "top")
+    }, res = 96)
+
+    # Predictive values plot
+    output$pv <- renderPlot({
+        property %>%
+            filter(threshold == input$threshold) %>%
+            ggplot(aes(x = prev, y = ppv)) +
+            geom_line(size = 1, col = "grey35") +
+            scale_x_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.1),
+                               labels = scales::percent_format(accuracy = 1)) +
+            scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.25),
+                               labels = scales::percent_format(accuracy = 1)) +
+            labs(x = "Disease prevalence", y = " ", colour = NULL,
+                 title = "Positive Predictive Value") +
+            theme_light() +
+            theme(panel.grid.minor = element_blank(),
+                  axis.title.y = element_blank())
+    }, res = 96)
+
+    # ROC
+    output$roc <- renderPlot({
+        roc_point <- property %>%
+            filter(threshold == input$threshold & prev == input$prevalence) %>%
+            select(Sensitivity, Specificity)
+
+        roc_dat <- property %>%
+            filter(prev == input$prevalence)
+
+        ggplot() +
+            geom_line(data = roc_dat,
+                      aes(x = 1 - Specificity, y = Sensitivity),
+                      size = 1, col = "grey35") +
+            geom_point(data = roc_point,
+                       aes(x = 1 - Specificity, y = Sensitivity),
+                       col = "#CD2990", size = 4) +
+            scale_x_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.25),
+                               labels = scales::percent_format(accuracy = 1)) +
+            scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.25),
+                               labels = scales::percent_format(accuracy = 1)) +
+            labs(x = "False positive rate (1 - Specificity)", y = "True positive rate (Sensitivity)",
+                 colour = NULL, title = "ROC curve") +
+            theme_light() +
+            theme(panel.grid.minor = element_blank())
     }, res = 96)
 }
 
