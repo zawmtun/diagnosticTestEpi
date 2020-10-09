@@ -116,7 +116,7 @@ server <- function(input, output, session) {
 	</ul>")
 
     output$author <- renderText(
-        "<p style='font-size: 11px'>Created by <a href='https://github.com/zawmtun'>Zaw Myo Tun</a>. Code for this webapp is available <a href='https://github.com/zawmtun/diagnosticTestEpi/blob/master/code/webapp/app.R'>here</a></p>."
+        "<p style='font-size: 10px'>Created by <a href='https://github.com/zawmtun'>Zaw Myo Tun</a>. Code for this webapp is available <a href='https://github.com/zawmtun/diagnosticTestEpi/blob/master/code/webapp/app.R'>here</a></p>."
         )
 
     # Sensitivity and specificity plot
@@ -200,7 +200,7 @@ server <- function(input, output, session) {
             scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.25),
                                labels = scales::percent_format(accuracy = 1)) +
             labs(x = "False positive rate (1 - Specificity)", y = "True positive rate (Sensitivity)",
-                 colour = NULL, title = "ROC curve") +
+                 colour = NULL, title = "ROC Curve") +
             theme_light() +
             theme(panel.grid.minor = element_blank())
     }, res = 96)
