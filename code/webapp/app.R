@@ -5,8 +5,8 @@ library(purrr)
 library(tibble)
 library(shiny)
 
+theme_set(theme_light())
 options(shiny.autoreload = TRUE)
-
 
 # Create dataset ----------------------------------------------------------
 
@@ -133,7 +133,6 @@ server <- function(input, output, session) {
             scale_color_manual(values = plot_colours) +
             labs(x = "Threshold for a positive result", y = "", colour = NULL,
                  title = "Sensitivity and Specificity") +
-            theme_light() +
             theme(axis.title.y = element_text(size = 0.6),
                   legend.position = "top",
                   panel.grid.minor = element_blank())
@@ -157,7 +156,6 @@ server <- function(input, output, session) {
             scale_x_continuous(breaks = seq(0, 150, 10)) +
             scale_color_manual(values = plot_colours) +
             scale_fill_manual(values = plot_colours) +
-            theme_light() +
             theme(panel.grid.minor = element_blank(),
                   legend.position = "top")
     }, res = 96)
@@ -168,13 +166,12 @@ server <- function(input, output, session) {
             filter(threshold == input$threshold) %>%
             ggplot(aes(x = prev, y = ppv)) +
             geom_line(size = 1, col = "grey35") +
-            scale_x_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.1),
+            scale_x_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.2),
                                labels = scales::percent_format(accuracy = 1)) +
             scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.25),
                                labels = scales::percent_format(accuracy = 1)) +
             labs(x = "Disease prevalence", y = " ", colour = NULL,
                  title = "Positive Predictive Value") +
-            theme_light() +
             theme(panel.grid.minor = element_blank(),
                   axis.title.y = element_blank())
     }, res = 96)
@@ -201,7 +198,6 @@ server <- function(input, output, session) {
                                labels = scales::percent_format(accuracy = 1)) +
             labs(x = "False positive rate (1 - Specificity)", y = "True positive rate (Sensitivity)",
                  colour = NULL, title = "ROC Curve") +
-            theme_light() +
             theme(panel.grid.minor = element_blank())
     }, res = 96)
 }
