@@ -116,7 +116,7 @@ server <- function(input, output, session) {
 	</ul>")
 
     output$author <- renderText(
-        "<p style='font-size: 10px'>Created by <a href='https://github.com/zawmtun'>Zaw Myo Tun</a>. Code for this webapp is available <a href='https://github.com/zawmtun/diagnosticTestEpi/blob/master/code/webapp/app.R'>here</a></p>."
+        "<p style='font-size: 10px'>Created by <a href='https://github.com/zawmtun'>Zaw Myo Tun</a>. Code for this webapp is available <a href='https://github.com/zawmtun/diagnosticTestEpi/blob/master/code/webapp/app.R'>here</a>.</p>"
         )
 
     # Sensitivity and specificity plot
